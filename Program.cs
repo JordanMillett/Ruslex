@@ -33,6 +33,11 @@ public class Program
         LoadVerbs();
         LoadOther();
         
+        app.MapGet("/", (HttpContext context) =>
+        {
+            return Results.Ok(true);
+        });
+        
         app.MapGet("/translations", (HttpContext context) =>
         {
             return Results.Ok(translations);
