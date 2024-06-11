@@ -1,17 +1,10 @@
+using System.ComponentModel;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.WebHost.UseUrls("http://localhost:5147");
+builder.WebHost.UseUrls("http://localhost:5148");
 
 WebApplication app = builder.Build();
-
-/*
-Dictionary<string, Translation> translations = new Dictionary<string, Translation>
-{
-    { "привет", new Translation("hello", "greeting") },
-    { "кошка", new Translation("cat", "noun") },
-    { "собака", new Translation("dog", "noun") }
-};
-*/
 
 Dictionary<string, Translation> translations = new Dictionary<string, Translation>();
 
@@ -25,18 +18,45 @@ if (File.Exists(csvFilePath))
         foreach (var line in lines.Skip(1)) // Skip header line
         {
             var parts = line.Split('\t');
-            if (parts.Length >= 3) // Ensure at least three parts: Russian word, English translation, and word type
-            {
-                var russianWord = parts[0];
-                var englishTranslation = parts[2]; // Assuming English translation is in the third column
-                var wordType = parts[5]; // Assuming word type is in the sixth column
+            
+            var ru = parts[0];
+            var en = parts[2]; // Assuming English translation is in the third column
 
-                // Add to translations dictionary
-                if (!translations.ContainsKey(russianWord))
+            // Normalize the Russian word by removing apostrophes
+            ru = ru.Replace("'", "");
+
+            // Add the main form to translations dictionary
+            if (!translations.ContainsKey(ru))
+            {
+                translations.Add(ru, new Translation(ru, en));
+            }
+
+            // Process all other forms and add them to the dictionary
+            var forms = new List<string>
+            {
+                parts[10], // sg_nom
+                parts[11], // sg_gen
+                parts[12], // sg_dat
+                parts[13], // sg_acc
+                parts[14], // sg_inst
+                parts[15], // sg_prep
+                parts[16], // pl_nom
+                parts[17], // pl_gen
+                parts[18], // pl_dat
+                parts[19], // pl_acc
+                parts[20], // pl_inst
+                parts[21]  // pl_prep
+            };
+
+            foreach (var form in forms)
+            {
+                var normalizedForm = form.Replace("'", "");
+                if (!string.IsNullOrWhiteSpace(normalizedForm) && !translations.ContainsKey(normalizedForm))
                 {
-                    translations.Add(russianWord, new Translation(englishTranslation, wordType));
+                    translations.Add(normalizedForm, new Translation(parts[0], en));
                 }
             }
+                
         }
     }
     catch (Exception ex)
@@ -71,17 +91,17 @@ try
 }
 catch
 {
-    Console.WriteLine($"Server crashed. Port 5147 may already be in use.");
+    Console.WriteLine($"Server crashed. Port 5148 may already be in use.");
 }
 
 public struct Translation
 {
-    public string EnglishTranslation { get; set; }
-    public string WordType { get; set; }
+    public string RU { get; set; }
+    public string EN { get; set; }
 
-    public Translation(string englishTranslation, string wordType)
+    public Translation(string ru, string en)
     {
-        EnglishTranslation = englishTranslation;
-        WordType = wordType;
+        RU = ru;
+        EN = en;
     }
 }
